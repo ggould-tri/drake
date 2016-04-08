@@ -2,12 +2,15 @@
 #define DRAKE_UTIL_POLYNOMIAL_H_
 
 #include <Eigen/Core>
-#include <complex>
 #include <unsupported/Eigen/Polynomials>
+
+#include <complex>
+#include <random>
+#include <set>
+#include <stdexcept>
 #include <string>
 #include <vector>
-#include <random>
-#include <stdexcept>
+
 #include "drake/drakePolynomial_export.h"
 
 /// A scalar multi-variate polynomial, modeled after the msspoly in spotless.
@@ -141,6 +144,9 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
   const std::vector<Monomial>& getMonomials() const;
 
   Eigen::Matrix<CoefficientType, Eigen::Dynamic, 1> getCoefficients() const;
+
+  /// Returns a set of all of the variables present in this Polynomial.
+  std::set<VarType> getVariables() const;
 
   /// Evaluate a univariate Polynomial at a specific point.
   /**
