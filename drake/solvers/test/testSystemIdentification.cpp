@@ -1,11 +1,12 @@
 #include <iostream>
 #include "drake/util/Polynomial.h"
-#include "drake/util/SystemIdentification.h"
 #include "drake/util/testUtil.h"
 #include "gtest/gtest.h"
 
+#include "drake/solvers/SystemIdentification.h"
+
 namespace drake {
-namespace util {
+namespace solvers {
 
 typedef SystemIdentification<double> SID;
 

@@ -9,6 +9,13 @@ if (GTEST_FOUND)
   add_test(NAME testMobyLCP COMMAND testMobyLCP)
 endif()
 
+if (GTEST_FOUND)
+  add_executable(testSystemIdentification testSystemIdentification.cpp)
+  target_link_libraries(testSystemIdentification
+                        drakeOptimization ${GTEST_BOTH_LIBRARIES})
+  add_test(NAME testSystemIdentification COMMAND testSystemIdentification)
+endif (GTEST_FOUND)
+
 add_matlab_test(NAME solvers/test/gloptipoly_constrained_test COMMAND gloptipoly_constrained_test)
 add_matlab_test(NAME solvers/test/rrt_basic COMMAND rrt_basic)
 add_matlab_test(NAME solvers/test/rrt_bugtrap COMMAND rrt_bugtrap)

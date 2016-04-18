@@ -1,5 +1,5 @@
-#ifndef DRAKE_UTIL_SYSTEMIDENTIFICATION_H_
-#define DRAKE_UTIL_SYSTEMIDENTIFICATION_H_
+#ifndef DRAKE_SOLVERS_SYSTEMIDENTIFICATION_H_
+#define DRAKE_SOLVERS_SYSTEMIDENTIFICATION_H_
 
 #include <map>
 #include <set>
@@ -7,10 +7,10 @@
 #include <vector>
 
 #include "drake/util/Polynomial.h"
-#include "drake/drakePolynomial_export.h"
+#include "drake/drakeOptimization_export.h"
 
 namespace drake {
-namespace util {
+namespace solvers {
 
 /// Utility functions for system identification.
 /**
@@ -19,7 +19,7 @@ namespace util {
  * supported variant of Polynomial (currently only Polynomial<double>).
  */
 template <typename _CoefficientType = double>
-class DRAKEPOLYNOMIAL_EXPORT SystemIdentification {
+class DRAKEOPTIMIZATION_EXPORT SystemIdentification {
  public:
   typedef _CoefficientType CoefficientType;
   typedef ::Polynomial<CoefficientType> PolyType;
@@ -103,4 +103,4 @@ class DRAKEPOLYNOMIAL_EXPORT SystemIdentification {
 };
 };
 };
-#endif  // DRAKE_UTIL_SYSTEMIDENTIFICATION_H_
+#endif  // DRAKE_SOLVERS_SYSTEMIDENTIFICATION_H_
