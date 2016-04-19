@@ -1,6 +1,7 @@
 #include "drake/solvers/SystemIdentification.h"
 
 #include <algorithm>
+#include "drake/solvers/Optimization.h"
 
 namespace drake {
 namespace solvers {
@@ -193,6 +194,45 @@ SystemIdentification<T>::RewritePolynomialWithLumpedParameters(
   }
 
   return PolyType(working_monomials.begin(), working_monomials.end());
+}
+
+template<typename T>
+typename SystemIdentification<T>::ValueMappingType
+SystemIdentification<T>::EstimateLumpedParameters(
+    const PolyType& expr,
+    const std::vector<const ValueMappingType>& empirical_variable_values,
+    const std::vector<CoefficientType>& empirical_expr_values) {
+  // Gather up our empirical variables and parameters.
+  const std::set<VarType> all_vars = expr.getVariabls();
+  std::set<VarType> empirical_vars;
+  for (const ValueMappingType& mapping : empirical_variable_values) {
+    for (const auto& map_pair : mapping) {
+      empirical_vars.insert(map_pair.first);
+    }
+  }
+  std::vector<VarType> parameter_vars;  // std::vector to ensure stable order.
+  std::set_difference(all_vars.begin(), all_vars.end(),
+                      empirical_vars.begin(), empirical_vars.end(),
+                      std::inserter(parameter_vars.end()));
+
+  ... linearize?
+  
+  // Build an optimization problem with slots for the parameter variables.
+  Drake::OptimizationProblem problem;
+  problem.AddContinuousVariables(parameter_vars.size());
+  
+
+  // Build a quadratic cost for each observation.
+  
+
+  // Fire off the solver.
+  
+
+  // Extract the parameter values from the optimization problem's slots into
+  // the return mapping.
+  
+
+  return ValueMappingType();
 }
 
 };

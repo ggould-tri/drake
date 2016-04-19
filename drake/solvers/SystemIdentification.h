@@ -27,6 +27,7 @@ class DRAKEOPTIMIZATION_EXPORT SystemIdentification {
   typedef typename PolyType::Term TermType;
   typedef typename PolyType::VarType VarType;
   typedef std::map<PolyType, VarType> LumpingMapType;
+  typedef std::map<VarType, CoefficientType> ValueMappingType;
 
   /// Extract lumped parameters from a given polynomial.
   /**
@@ -68,7 +69,22 @@ class DRAKEOPTIMIZATION_EXPORT SystemIdentification {
       const PolyType& poly,
       const LumpingMapType& lumped_parameters);
 
- private:
+  /// Estimate values for the parameters of expr based on empirical values.
+  /**
+   * Given an expression E(x, y, ..., a, b, ...) and empirical values for E,
+   * x, y, ..., estimate constant values for the parameters a, b, ... not
+   * provided.
+   *
+   * An estimate will be provided for any parameter that appears in expr but
+   * not in empirical_variable_values.  Estimates are computed on a
+   * least-squares const function.
+   */
+  static ValueMappingType EstimateLumpedParameters(
+      const PolyType& expr,
+      const std::vector<const ValueMappingType>& empirical_variable_values,
+      const std::vector<CoefficientType>& empirical_expr_values);
+
+private:
   /// This class is not constructable.
   SystemIdentification() {}
 
