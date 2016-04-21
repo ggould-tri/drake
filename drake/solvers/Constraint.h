@@ -98,6 +98,25 @@ class QuadraticConstraint : public Constraint {
 // todo: consider implementing DifferentiableConstraint,
 // TwiceDifferentiableConstraint, PolynomialConstraint, QuadraticConstraint,
 // ComplementarityConstraint, IntegerConstraint, ...
+
+/** PolynomialConstraint
+ * @brief Implements a constraint of the form @f lb <= P(x, y, z, ...) <= ub @f
+ * where P is a mulitvariate polynomial.
+ *
+ * The Polynomiald class operates in terms of symbolic variables identified by
+ * values of Polynomiald::VarType.  To construct a PolynomialConstraint you
+ * must supply a mapping of problem variables to VarType.
+ */
+class PolynomialConstraint : public Constraint {
+ public:
+  PolynomialConstraint(Polynomiald polynomial,
+                       double lower_bound, double upper_bound,
+                       ...) {
+    
+  }
+}
+
+
 /** LinearConstraint
  * @brief Implements a constraint of the form @f lb <= Ax <= ub @f
  */
