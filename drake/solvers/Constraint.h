@@ -156,6 +156,8 @@ class PolynomialConstraint : public Constraint {
   mutable std::map<Polynomiald::VarType, TaylorVarXd> taylor_evaluation_point_;
 };
 
+...
+
 // todo: consider implementing DifferentiableConstraint,
 // TwiceDifferentiableConstraint, ComplementarityConstraint,
 // IntegerConstraint, ...

@@ -15,6 +15,7 @@
 #include "drake/solvers/MathematicalProgram.h"
 #include "drake/solvers/solution_result.h"
 #include "drake/util/Polynomial.h"
+#include "drake/util/TrigPoly.h"
 
 
 namespace Drake {
@@ -592,6 +593,39 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
           const std::vector<Polynomiald::VarType>& poly_vars,
           double lb, double ub) {
     return AddPolynomialConstraint(
+        polynomial, poly_vars, lb, ub, variable_views_);
+  }
+
+  /** AddTrigPolyConstraint
+   *
+   * @brief Adds a TrigPoly constraint to the program referencing a subset
+   * of the decision variables (defined in the vars parameter).
+   */
+  std::shared_ptr<TrigPolyConstraint>
+      AddTrigPolyConstraint(
+          const TrigPolyd& polynomial,
+          const std::vector<TrigPolyd::PolyType::VarType>& poly_vars,
+          double lb, double ub,
+          const VariableList& vars) {
+    problem_type_.reset(
+        problem_type_->AddGenericConstraint());
+    std::shared_ptr<TrigPolyConstraint>
+        constraint(new TrigPolyConstraint(polynomial, poly_vars, lb, ub));
+    AddGenericConstraint(constraint, vars);
+    return constraint;
+  }
+
+  /** AddTrigPolyConstraint
+   *
+   * @brief Adds a TrigPoly constraint to the program referencing all of the
+   * decision variables.
+   */
+  std::shared_ptr<TrigPolyConstraint>
+      AddTrigPolyConstraint(
+          const TrigPolyd& polynomial,
+          const std::vector<TrigPoly::PolyType::VarType>& poly_vars,
+          double lb, double ub) {
+    return AddTrigPolyConstraint(
         polynomial, poly_vars, lb, ub, variable_views_);
   }
 
