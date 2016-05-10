@@ -56,38 +56,19 @@ class TrigPoly {
 
   /// Constructs a constant TrigPoly.
   // NOLINTNEXTLINE(runtime/explicit) This conversion is desirable.
-  TrigPoly(const CoefficientType& scalar) : poly(scalar) {}
+  TrigPoly(const CoefficientType& scalar);
 
   /**
    * Constructs a TrigPoly on the associated Polynomial p, but with the
    * additional information about sin and cos relations in _sin_cos_map.
    */
-  TrigPoly(const PolyType& p, const SinCosMap& _sin_cos_map)
-      : poly(p), sin_cos_map(_sin_cos_map) {
-    // The provided _sin_cos_map might have extraneous entries; clip them.
-    std::set<VarType> vars_in_use = p.getVariables();
-    for (const auto& sin_cos_entry : _sin_cos_map) {
-      if (!vars_in_use.count(sin_cos_entry.first)) {
-        sin_cos_map.erase(sin_cos_entry.first);
-      }
-    }
-  }
+  TrigPoly(const PolyType& p, const SinCosMap& _sin_cos_map);
 
   /**
    * Constructs a TrigPoly version of q, but with the additional information
    * that the variables s and c represent the sine and cosine of q.
    */
-  TrigPoly(const PolyType& q, const PolyType& s, const PolyType& c) {
-    if ((q.getDegree() != 1) || (s.getDegree() != 1) || (c.getDegree() != 1))
-      throw std::runtime_error(
-          "q, s, and c must all be simple polynomials (in the msspoly sense)");
-
-    poly = q;
-    SinCosVars sc;
-    sc.s = s.getSimpleVariable();
-    sc.c = c.getSimpleVariable();
-    sin_cos_map[q.getSimpleVariable()] = sc;
-  }
+  TrigPoly(const PolyType& q, const PolyType& s, const PolyType& c);
 
   /// Returns the underlying Polynomial for this TrigPoly.
   const PolyType& getPolynomial(void) const { return poly; }
