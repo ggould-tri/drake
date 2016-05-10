@@ -1,10 +1,12 @@
 #pragma once
 
 #include <algorithm>
+#include <initializer_list>
 #include <list>
 #include <map>
 #include <memory>
-#include <initializer_list>
+#include <vector>
+
 #include <Eigen/Core>
 
 #include "drake/core/Function.h"
@@ -598,35 +600,92 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
 
   /** AddTrigPolyConstraint
    *
-   * @brief Adds a TrigPoly constraint to the program referencing a subset
-   * of the decision variables (defined in the vars parameter).
+   * @brief Adds a constraint on the value of a TrigPoly on a subset of the
+   * decision variables.
+   *
+   * Note that because TrigPolyConstraint is not implemented directly, this
+   * actually returns multiple constraints -- for now a Polynomial constraint
+   * and a series of TrigConstraints.
    */
-  std::shared_ptr<TrigPolyConstraint>
+  std::vector<std::shared_ptr<Constraint>>
       AddTrigPolyConstraint(
-          const TrigPolyd& polynomial,
+          const TrigPolyd& trigpoly,
           const std::vector<TrigPolyd::PolyType::VarType>& poly_vars,
           double lb, double ub,
           const VariableList& vars) {
+    typedef TrigPolyd::PolyType::VarType VarType;
     problem_type_.reset(
         problem_type_->AddGenericConstraint());
-    std::shared_ptr<TrigPolyConstraint>
-        constraint(new TrigPolyConstraint(polynomial, poly_vars, lb, ub));
-    AddGenericConstraint(constraint, vars);
-    return constraint;
+    std::vector<std::shared_ptr<Constraint>> constraints;
+    constraints.push_back(
+        AddPolynomialConstraint(trigpoly.getPolynomial(),
+                                poly_vars, lb, ub, vars));
+    for (const auto& sin_cos_item : trigpoly.getSinCosMap()) {
+      VarType base_var = sin_cos_item.first;
+      VarType sin_var = sin_cos_item.second.s;
+      VarType cos_var = sin_cos_item.second.c;
+      int base_var_index = std::find(poly_vars.begin(), poly_vars.end(),
+                                     base_var) - poly_vars.begin();
+      int sin_var_index = std::find(poly_vars.begin(), poly_vars.end(),
+                                    sin_var) - poly_vars.begin();
+      int cos_var_index = std::find(poly_vars.begin(), poly_vars.end(),
+                                    cos_var) - poly_vars.begin();
+      constraints.push_back(std::make_shared<TrigConstraint>(
+          base_var_index, sin_var_index, TrigConstraint::kSin));
+      AddGenericConstraint(constraints.back(), vars);
+      constraints.push_back(std::make_shared<TrigConstraint>(
+          base_var_index, cos_var_index, TrigConstraint::kCos));
+      generic_constraints_.push_back(constraints.back());
+   * Note that because TrigPolyConstraint is not implemented directly, this
+   * actually returns multiple constraints -- for now a Polynomial constraint
+   * and a series of TrigConstraints.
+   */
+  std::vector<std::shared_ptr<Constraint>>
+      AddTrigPolyConstraint(
+          const TrigPolyd& trigpoly,
+          const std::vector<TrigPolyd::PolyType::VarType>& poly_vars,
+          double lb, double ub,
+          const VariableList& vars) {
+    typedef TrigPolyd::PolyType::VarType VarType;
+    problem_type_.reset(
+        problem_type_->AddGenericConstraint());
+    std::vector<std::shared_ptr<Constraint>> constraints;
+    constraints.push_back(
+        AddPolynomialConstraint(trigpoly.getPolynomial(),
+                                poly_vars, lb, ub, vars));
+    for (const auto& sin_cos_item : trigpoly.getSinCosMap()) {
+      VarType base_var = sin_cos_item.first;
+      VarType sin_var = sin_cos_item.second.s;
+      VarType cos_var = sin_cos_item.second.c;
+      auto var_index = [&](VarType v)->int {
+        return (std::find(poly_vars.begin(), poly_vars.end(), v) -
+                poly_vars.begin())}
+      constraints.push_back(std::make_shared<TrigConstraint>(
+          var_index(base_var), var_index(sin_var), TrigConstraint::kSin));
+      AddGenericConstraint(constraints.back(), vars);
+      constraints.push_back(std::make_shared<TrigConstraint>(
+          var_index(base_var), var_index(sin_var), TrigConstraint::kCos));
+      AddGenericConstraint(constraints.back(), vars);
+    }
+    return constraints;
   }
 
   /** AddTrigPolyConstraint
    *
-   * @brief Adds a TrigPoly constraint to the program referencing all of the
+   * @brief Adds a constraint on the value of a TrigPoly on all of the
    * decision variables.
+   *
+   * Note that because TrigPolyConstraint is not implemented directly, this
+   * actually returns multiple constraints -- for now a Polynomial constraint
+   * and a series of TrigConstraints.
    */
-  std::shared_ptr<TrigPolyConstraint>
+  std::vector<std::shared_ptr<Constraint>>
       AddTrigPolyConstraint(
-          const TrigPolyd& polynomial,
-          const std::vector<TrigPoly::PolyType::VarType>& poly_vars,
+          const TrigPolyd& trigpoly,
+          const std::vector<TrigPolyd::PolyType::VarType>& poly_vars,
           double lb, double ub) {
     return AddTrigPolyConstraint(
-        polynomial, poly_vars, lb, ub, variable_views_);
+        trigpoly, poly_vars, lb, ub, variable_views_);
   }
 
   // template <typename FunctionType>

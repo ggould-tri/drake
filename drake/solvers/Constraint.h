@@ -1,9 +1,11 @@
 #pragma once
 
+#include <cmath>
 #include <stdexcept>
 
 #include <Eigen/Core>
 #include <Eigen/SparseCore>
+#include <unsupported/Eigen/AutoDiff>
 
 #include "drake/util/Polynomial.h"
 
@@ -128,7 +130,7 @@ class PolynomialConstraint : public Constraint {
   ~PolynomialConstraint() override {}
 
   void eval(const Eigen::Ref<const Eigen::VectorXd>& x,
-                    Eigen::VectorXd& y) const override {
+            Eigen::VectorXd& y) const override {
     double_evaluation_point_.clear();
     for (int i = 0; i < poly_vars_.size(); i++) {
       double_evaluation_point_[poly_vars_[i]] = x[i];
@@ -138,7 +140,7 @@ class PolynomialConstraint : public Constraint {
   }
 
   void eval(const Eigen::Ref<const TaylorVecXd>& x,
-                    TaylorVecXd& y) const override {
+            TaylorVecXd& y) const override {
     taylor_evaluation_point_.clear();
     for (int i = 0; i < poly_vars_.size(); i++) {
       taylor_evaluation_point_[poly_vars_[i]] = x[i];
@@ -156,7 +158,61 @@ class PolynomialConstraint : public Constraint {
   mutable std::map<Polynomiald::VarType, TaylorVarXd> taylor_evaluation_point_;
 };
 
-...
+/** TrigConstraint
+ *
+ * @brief Implements a constraint that y = sin(x) or y = cos(x).  Operates on
+ * only a single element (not a vector).
+ *
+ * For eval() and bounds purposes, this is implemented as a requirement that
+ * sin(x) - y == 0.
+ */
+class TrigConstraint : public Constraint {
+ public:
+  static const int kNumConstraints = 1;
+  enum TrigFunction { kSin=1, kCos };
+
+  /**
+   * Constrain that fn(x) - y == 0, where x is the input_var_index'th element
+   * of the binding, y is the trig_var_index'th element of the binding, and fn
+   * is sin or cos depending on the trig_function parameter.
+   *
+   * All angles are always in radians.
+   */
+  TrigConstraint(int input_var_index, int trig_var_index,
+                 TrigFunction trig_function) :
+      Constraint(kNumConstraints,
+                 Vector1d::Constant(0), Vector1d::Constant(0)),
+      input_var_index_(input_var_index),
+      trig_var_index_(trig_var_index),
+      trig_function_(trig_function) {
+    assert((trig_function_ == kSin) || (trig_function == kCos));
+  }
+
+  ~TrigConstraint() override {}
+
+  void eval(const Eigen::Ref<const Eigen::VectorXd>& x,
+            Eigen::VectorXd& y) const override {
+    y.resize(num_constraints());
+    double trig_val = (trig_function_ == kSin)
+        ? std::sin(x[input_var_index_])
+        : std::cos(x[input_var_index_]);
+    y[0] = trig_val - x[trig_var_index_];
+  }
+
+  void eval(const Eigen::Ref<const TaylorVecXd>& x,
+            TaylorVecXd& y) const override {
+    y.resize(num_constraints());
+    TaylorVarXd trig_val = (trig_function_ == kSin)
+        ? Eigen::sin(x[input_var_index_])
+        : Eigen::cos(x[input_var_index_]);
+    y[0] = trig_val - x[trig_var_index_];
+  }
+
+ private:
+  int input_var_index_;
+  int trig_var_index_;
+  TrigFunction trig_function_;
+};
 
 // todo: consider implementing DifferentiableConstraint,
 // TwiceDifferentiableConstraint, ComplementarityConstraint,
