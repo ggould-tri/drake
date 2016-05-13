@@ -3,8 +3,6 @@
 #include <algorithm>
 #include <cmath>
 
-#include "drake/solvers/Optimization.h"
-
 
 namespace drake {
 namespace solvers {
@@ -236,57 +234,77 @@ SystemIdentification<T>::RewritePolynomialWithLumpedParameters(
 }
 
 template<typename T>
+std::tuple<
+  Drake::DecisionVariableView, std::vector<SystemIdentification<T>::VarType>,
+  Drake::DecisionVariableView, std::vector<SystemIdentification<T>::VarType>,
+  std::vector<SystemIdentification<T>::VarType>>
+SystemIdentification<T>::BuildOptimizerVars(
+    Drake::OptimizationProblem& problem,
+    const std::set<VarType>& all_vars,
+    const std::vector<PartialEvalType>& active_var_values) {
+  assert(active_var_values.size() > 0);
+  const int num_data = active_var_values.size();
+
+  // The set of vars left unspecified in at least one of active_var_values,
+  // and thus which must appear in our return map.
+  std::set<VarType> problem_vartypes_set;
+  for (const PartialEvalType& partial_eval_map : active_var_values) {
+    std::set<VarType> unspecified_vars = all_vars;
+    for (auto const& element : partial_eval_map) {
+      unspecified_vars.erase(element.first);
+    }
+    problem_vartypes_set.insert(unspecified_vars.begin(),
+                                unspecified_vars.end());
+  }
+  std::vector<VarType> problem_vartypes(problem_vartypes_set.begin(),
+                                    problem_vartypes_set.end());
+  int num_to_estimate = problem_vartypes.size();
+
+  // Make sure we have as many data points as vars we are estimating, or else
+  // our solution will be meaningless.
+  assert(num_data >= problem_vartypes.size());
+
+  // Build up our optimization problem's decision variables.
+  const auto parameter_variables =
+      problem.AddContinuousVariables(num_to_estimate, "param");
+  const auto error_variables =
+      problem.AddContinuousVariables(num_data, "error");
+
+  // Create VarType IDs for our error terms.  error_vartypes holds a VarType
+  // for each error variable.
+  //
+  // A temporary set, vars_in_problem, is used for ensuring unique names.
+  std::vector<VarType> error_vartypes;
+  std::set<VarType> vars_in_problem = problem_vartypes_set;
+  for (int i = 0; i < num_data; i++) {
+    VarType error_var = CreateUnusedVar("err", vars_in_problem);
+    vars_in_problem.insert(error_var);
+    error_vartypes.push_back(error_var);
+  }
+
+  return std::make_tuple(param_variables, param_vartypes,
+                         error_variables, error_vartypes,
+                         problem_vartypes);
+}
+
+template<typename T>
 std::pair<typename SystemIdentification<T>::PartialEvalType, T>
 SystemIdentification<T>::EstimateParameters(
     const PolyType& poly,
     const std::vector<PartialEvalType>& active_var_values) {
   assert(active_var_values.size() > 0);
   const int num_data = active_var_values.size();
-
   const std::set<VarType> all_vars = poly.getVariables();
 
-  // The set of vars left unspecified in at least one of active_var_values,
-  // and thus which must appear in our return map.
-  std::set<VarType> vars_to_estimate_set;
-  for (const PartialEvalType& partial_eval_map : active_var_values) {
-    std::set<VarType> unspecified_vars = all_vars;
-    for (auto const& element : partial_eval_map) {
-      unspecified_vars.erase(element.first);
-    }
-    vars_to_estimate_set.insert(unspecified_vars.begin(),
-                                unspecified_vars.end());
-  }
-  std::vector<VarType> vars_to_estimate(vars_to_estimate_set.begin(),
-                                        vars_to_estimate_set.end());
-  int num_to_estimate = vars_to_estimate.size();
-
-  // Make sure we have as many data points as vars we are estimating, or else
-  // our solution will be meaningless.
-  assert(num_data >= vars_to_estimate.size());
-
-  // Build up our optimization problem's decision variables.
   Drake::OptimizationProblem problem;
-  const auto parameter_variables =
-      problem.AddContinuousVariables(num_to_estimate, "param");
-  const auto error_variables =
-      problem.AddContinuousVariables(num_data, "error");
 
-  // Create any necessary VarType IDs.  We build up two lists of VarType:
-  //  * problem_vartypes holds a VarType for each decision variable.  This
-  //    list will be used to build the constraints.
-  //  * error_vartypes holds a VarType for each error variable.  This list
-  //    will be used to build the objective function.
-  // In addition a temporary set, vars_to_estimate_set, is used for ensuring
-  // unique names.
-  std::vector<VarType> problem_vartypes = vars_to_estimate;
-  std::vector<VarType> error_vartypes;
-  std::set<VarType> vars_in_problem = vars_to_estimate_set;
-  for (int i = 0; i < num_data; i++) {
-    VarType error_var = CreateUnusedVar("err", vars_in_problem);
-    vars_in_problem.insert(error_var);
-    error_vartypes.push_back(error_var);
-    problem_vartypes.push_back(error_var);
-  }
+  // Get our variable mappings from the helper function.
+  std::vector<VarType> param_vartypes, error_vartypes, problem_vartypes;
+  Drake::DecisionVariableView param_variables, error_variables;
+  std::tie(param_variables, param_vartypes,
+           error_variables, error_vartypes,
+           problem_vartypes) =
+      BuildOptimizerVars(problem, all_vars, active_var_values);
 
   // For each datum, build a constraint with an error term.
   for (int i = 0; i < num_data; i++) {
@@ -297,6 +315,18 @@ SystemIdentification<T>::EstimateParameters(
         constraint_poly, problem_vartypes, 0, 0);
   }
 
+  // Dispatch the problem to a helper function to run the program.
+  return RunErrorMinimization(problem, problem_vartypes,
+                              error_variables, parameter_variables);
+}
+
+template<typename T>
+std::pair<typename SystemIdentification<T>::PartialEvalType, T>
+SystemIdentification<T>::RunErrorMinimization(
+    Drake::OptimizationProblem& problem,
+    const std::vector<VarType>& problem_vartypes,
+    Drake::DecisionVariableView& error_variables,
+    Drake::DecisionVariableView& parameter_variables) {
   // Create a cost function that is least-squares on the error terms.
   auto cost = problem.AddQuadraticCost(
       Eigen::MatrixXd::Identity(num_data, num_data),
@@ -311,7 +341,7 @@ SystemIdentification<T>::EstimateParameters(
   }
   PartialEvalType estimates;
   for (int i = 0; i < num_to_estimate; i++) {
-    VarType var = vars_to_estimate[i];
+    VarType var = problem_vartypes[i];
     estimates[var] = parameter_variables.value()[i];
   }
   T error_squared = 0;

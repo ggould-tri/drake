@@ -5,6 +5,7 @@
 #include <stdexcept>
 #include <vector>
 
+#include "drake/solvers/Optimization.h"
 #include "drake/util/Polynomial.h"
 #include "drake/drakeOptimization_export.h"
 
@@ -162,6 +163,25 @@ class DRAKEOPTIMIZATION_EXPORT SystemIdentification {
   /// the variable's name will be prefix.
   static VarType CreateUnusedVar(const std::string& prefix,
                                  const std::set<VarType>& vars_in_use);
+
+  /// @name Helper functions for parameter estimation.
+  //@{
+
+  std::tuple<Drake::DecisionVariableView, std::vector<VarType>,
+             Drake::DecisionVariableView, std::vector<VarType>,
+             std::vector<VarType>>
+      BuildOptimizerVars(
+          Drake::OptimizationProblem& problem,
+          const std::set<VarType>& all_vars,
+          const std::vector<PartialEvalType>& active_var_values);
+
+  std::pair<PartialEvalType, CoefficientType>
+      RunErrorMinimization(
+          Drake::OptimizationProblem& problem,
+          const std::vector<VarType>& problem_vartypes,
+          Drake::DecisionVariableView& error_variables,
+          Drake::DecisionVariableView& parameter_variables);
+  //@}
 };
 }  // namespace solvers
 }  // namespace drake
