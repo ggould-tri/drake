@@ -15,7 +15,8 @@ namespace solvers {
 /**
  * This class is a holder for templated utility methods.  It should not be
  * constructed.  It must be template-instantiated (in its cpp file) for each
- * supported variant of Polynomial (currently only Polynomial<double>).
+ * supported Polynomial-like expression class (currently only
+ * Polynomial<double>; soon TrigPoly<double>).
  *
  * For the purposes of system identification we require here that the set of
  * variables in a polynomial can be divided into two groups:
@@ -33,14 +34,15 @@ namespace solvers {
  * minimum number of "lumped" parameters and then estimating the values of
  * those parameters based on empirical data.
  */
-template <typename CoefficientType>
+template <typename ExprType>
 class DRAKEOPTIMIZATION_EXPORT SystemIdentification {
  public:
-  typedef ::Polynomial<CoefficientType> PolyType;
-  typedef typename PolyType::Monomial MonomialType;
-  typedef typename PolyType::Term TermType;
-  typedef typename PolyType::VarType VarType;
-  typedef std::map<PolyType, VarType> LumpingMapType;
+  typedef typename ExprType::CoefficientType CoefficientType;
+  typedef typename ExprType::Monomial MonomialType;
+  typedef typename ExprType::Term TermType;
+  typedef typename ExprType::VarType VarType;
+  typedef std::map<ExprType, VarType> LumpingMapType;
+  typedef Eigen::Matrix<ExprType, Eigen::Dynamic, 1> VectorXExpr;
 
   /// Extract lumped parameters from a given polynomial.
   /**
@@ -61,7 +63,7 @@ class DRAKEOPTIMIZATION_EXPORT SystemIdentification {
    * "lump2" here are examples.
    */
   static LumpingMapType GetLumpedParametersFromPolynomial(
-      const PolyType& poly,
+      const ExprType& poly,
       const std::set<VarType>& parameter_vars);
 
   /// Same as GetLumpedParametersFromPolynomial but for multiple Polynomials.
@@ -71,7 +73,7 @@ class DRAKEOPTIMIZATION_EXPORT SystemIdentification {
    * together.
    */
   static LumpingMapType GetLumpedParametersFromPolynomials(
-      const std::vector<PolyType>& polys,
+      const std::vector<ExprType>& polys,
       const std::set<VarType>& parameter_vars);
 
   /// Rewrite a Polynomial in terms of lumped parameters.
@@ -83,8 +85,8 @@ class DRAKEOPTIMIZATION_EXPORT SystemIdentification {
    * And our polynomial is now:
    *   lump1*x + lump2*y + lump2*y**2
    */
-  static PolyType RewritePolynomialWithLumpedParameters(
-      const PolyType& poly,
+  static ExprType RewritePolynomialWithLumpedParameters(
+      const ExprType& poly,
       const LumpingMapType& lumped_parameters);
 
   /// Estimate some parameters of a polynomial based on empirical data.
@@ -103,7 +105,7 @@ class DRAKEOPTIMIZATION_EXPORT SystemIdentification {
    */
   typedef std::map<VarType, CoefficientType> PartialEvalType;
   static std::pair<PartialEvalType, CoefficientType> EstimateParameters(
-      const VectorXPoly& polys,
+      const VectorXExpr& polys,
       const std::vector<PartialEvalType>& active_var_values);
 
  private:
@@ -123,7 +125,7 @@ class DRAKEOPTIMIZATION_EXPORT SystemIdentification {
    */
   static std::set<MonomialType>
   GetAllCombinationsOfVars(
-      const std::vector<PolyType>& polys,
+      const std::vector<ExprType>& polys,
       const std::set<VarType>& vars);
 
   /// Test if one monomial is a product of parameters times another monomial.
@@ -151,13 +153,14 @@ class DRAKEOPTIMIZATION_EXPORT SystemIdentification {
    * this will return
    *   {2, x + 1.5 * y}
    */
-  static std::pair<CoefficientType, PolyType>
-  CanonicalizePolynomial(const PolyType& poly);
+  static std::pair<CoefficientType, ExprType>
+  CanonicalizePolynomial(const ExprType& poly);
 
   /// Obtain a new variable ID not already in vars_in_use.  The string part of
   /// the variable's name will be prefix.
   static VarType CreateUnusedVar(const std::string& prefix,
                                  const std::set<VarType>& vars_in_use);
 };
+
 }  // namespace solvers
 }  // namespace drake

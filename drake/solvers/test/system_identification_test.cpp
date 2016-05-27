@@ -10,7 +10,7 @@ namespace drake {
 namespace solvers {
 namespace {
 
-typedef SystemIdentification<double> SID;
+typedef SystemIdentification<Polynomiald> SID;
 
 GTEST_TEST(SystemIdentificationTest, LumpedSingle) {
   Polynomiald x = Polynomiald("x");

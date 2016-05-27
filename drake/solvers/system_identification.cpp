@@ -9,13 +9,13 @@
 namespace drake {
 namespace solvers {
 
-template<typename T>
-std::set<typename SystemIdentification<T>::MonomialType>
-SystemIdentification<T>::GetAllCombinationsOfVars(
-    const std::vector<PolyType>& polys,
+template<typename ExprType>
+std::set<typename SystemIdentification<ExprType>::MonomialType>
+SystemIdentification<ExprType>::GetAllCombinationsOfVars(
+    const std::vector<ExprType>& polys,
     const std::set<VarType>& vars) {
   std::set<MonomialType> result_monomials;
-  for (const PolyType& poly : polys) {
+  for (const ExprType& poly : polys) {
     for (const MonomialType& monomial : poly.getMonomials()) {
       MonomialType monomial_of_vars;
       monomial_of_vars.coefficient = 1;
@@ -32,8 +32,8 @@ SystemIdentification<T>::GetAllCombinationsOfVars(
   return result_monomials;
 }
 
-template<typename T>
-bool SystemIdentification<T>::MonomialMatches(
+template<typename ExprType>
+bool SystemIdentification<ExprType>::MonomialMatches(
     const MonomialType& haystack,
     const MonomialType& needle,
     const std::set<VarType>& active_vars) {
@@ -53,42 +53,42 @@ bool SystemIdentification<T>::MonomialMatches(
   return true;
 }
 
-template<typename T>
-std::pair<T, typename SystemIdentification<T>::PolyType>
-SystemIdentification<T>::CanonicalizePolynomial(const PolyType& poly) {
+template<typename ExprType>
+std::pair<typename ExprType::CoefficientType, ExprType>
+SystemIdentification<ExprType>::CanonicalizePolynomial(const ExprType& poly) {
   std::vector<MonomialType> monomials = poly.getMonomials();
-  const T min_coefficient = std::min_element(
+  const CoefficientType min_coefficient = std::min_element(
       monomials.begin(), monomials.end(),
       [&](const MonomialType& l, const MonomialType& r){
         return l.coefficient < r.coefficient; })->coefficient;
   for (MonomialType& monomial : monomials) {
     monomial.coefficient /= min_coefficient;
   }
-  return std::make_pair(min_coefficient, PolyType(monomials.begin(),
+  return std::make_pair(min_coefficient, ExprType(monomials.begin(),
                                                   monomials.end()));
 }
 
-template<typename T>
-typename SystemIdentification<T>::LumpingMapType
-SystemIdentification<T>::GetLumpedParametersFromPolynomial(
-    const PolyType& poly,
+template<typename ExprType>
+typename SystemIdentification<ExprType>::LumpingMapType
+SystemIdentification<ExprType>::GetLumpedParametersFromPolynomial(
+    const ExprType& poly,
     const std::set<VarType>& parameters) {
   // Just dispatch to the set version.
-  const std::vector<Polynomial<T>> polys = {poly};
-  return SystemIdentification<T>::GetLumpedParametersFromPolynomials(
+  const std::vector<ExprType> polys = {poly};
+  return SystemIdentification<ExprType>::GetLumpedParametersFromPolynomials(
       polys, parameters);
 }
 
-template<typename T>
-typename SystemIdentification<T>::LumpingMapType
-SystemIdentification<T>::GetLumpedParametersFromPolynomials(
-    const std::vector<PolyType>& polys,
+template<typename ExprType>
+typename SystemIdentification<ExprType>::LumpingMapType
+SystemIdentification<ExprType>::GetLumpedParametersFromPolynomials(
+    const std::vector<ExprType>& polys,
     const std::set<VarType>& parameters) {
   // Before we begin, find all the VarTypes in use so that we can create
   // unique ones for our lumped parameters, and find the list of active
   // variables..
   std::set<VarType> all_vars;
-  for (const PolyType& poly : polys) {
+  for (const ExprType& poly : polys) {
     const auto& poly_vars = poly.getVariables();
     all_vars.insert(poly_vars.begin(), poly_vars.end());
   }
@@ -103,9 +103,9 @@ SystemIdentification<T>::GetLumpedParametersFromPolynomials(
 
   // For each of those combinations, find the corresponding polynomials of
   // parameter variables in each polynomial.
-  std::set<PolyType> lumped_parameters;
+  std::set<ExprType> lumped_parameters;
   for (const MonomialType& active_var_monomial : active_var_monomials) {
-    for (const PolyType& poly : polys) {
+    for (const ExprType& poly : polys) {
       std::vector<MonomialType> lumped_parameter;
       for (const MonomialType& monomial : poly.getMonomials()) {
         // NOTE: This may be a performance hotspot if this method is called in
@@ -119,9 +119,9 @@ SystemIdentification<T>::GetLumpedParametersFromPolynomials(
       if (!lumped_parameter.size()) { continue; }
       // Factor out any coefficients, so that 'a' and '2*a' are not both
       // considered lumped parameters.
-      PolyType lumped_parameter_polynomial(lumped_parameter.begin(),
+      ExprType lumped_parameter_polynomial(lumped_parameter.begin(),
                                            lumped_parameter.end());
-      PolyType normalized =
+      ExprType normalized =
           CanonicalizePolynomial(lumped_parameter_polynomial).second;
       lumped_parameters.insert(normalized);
     }
@@ -130,7 +130,7 @@ SystemIdentification<T>::GetLumpedParametersFromPolynomials(
   // For each such parameter polynomial, create a lumped parameter with a
   // unique VarType id.
   LumpingMapType lumping_map;
-  for (const PolyType& lump : lumped_parameters) {
+  for (const ExprType& lump : lumped_parameters) {
     VarType lump_var = CreateUnusedVar("lump", all_vars);
     lumping_map[lump] = lump_var;
     all_vars.insert(lump_var);
@@ -139,26 +139,25 @@ SystemIdentification<T>::GetLumpedParametersFromPolynomials(
   return lumping_map;
 }
 
-template<typename T>
-typename SystemIdentification<T>::VarType
-SystemIdentification<T>::CreateUnusedVar(
+template<typename ExprType>
+typename SystemIdentification<ExprType>::VarType
+SystemIdentification<ExprType>::CreateUnusedVar(
     const std::string& prefix,
     const std::set<VarType>& vars_in_use) {
   int lump_index = 1;
   while (true) {
-    VarType lump_var = PolyType(prefix, lump_index).getSimpleVariable();
+    VarType lump_var = ExprType(prefix, lump_index).getSimpleVariable();
     lump_index++;
     if (!vars_in_use.count(lump_var)) {
       return lump_var;
     }
-  }  // Loop termination: If every id is already used, PolyType() will throw.
+  }  // Loop termination: If every id is already used, ExprType() will throw.
 }
 
 
-template<typename T>
-typename SystemIdentification<T>::PolyType
-SystemIdentification<T>::RewritePolynomialWithLumpedParameters(
-    const PolyType& poly,
+template<typename ExprType>
+ExprType SystemIdentification<ExprType>::RewritePolynomialWithLumpedParameters(
+    const ExprType& poly,
     const LumpingMapType& lumped_parameters) {
   // Reconstruct active_vars, the variables in poly that are not
   // mentioned by the lumped_parameters.
@@ -203,11 +202,11 @@ SystemIdentification<T>::RewritePolynomialWithLumpedParameters(
         new_working_monomials.push_back(working_monomial);
       }
     }
-    const PolyType factor_polynomial(factor_monomials.begin(),
+    const ExprType factor_polynomial(factor_monomials.begin(),
                                      factor_monomials.end());
     const auto& canonicalization = CanonicalizePolynomial(factor_polynomial);
-    const T coefficient = canonicalization.first;
-    const PolyType& canonicalized = canonicalization.second;
+    const CoefficientType coefficient = canonicalization.first;
+    const ExprType& canonicalized = canonicalization.second;
 
     if (!lumped_parameters.count(canonicalized)) {
       // Factoring out this combination yielded a parameter polynomial that
@@ -232,13 +231,14 @@ SystemIdentification<T>::RewritePolynomialWithLumpedParameters(
     working_monomials = new_working_monomials;
   }
 
-  return PolyType(working_monomials.begin(), working_monomials.end());
+  return ExprType(working_monomials.begin(), working_monomials.end());
 }
 
-template<typename T>
-std::pair<typename SystemIdentification<T>::PartialEvalType, T>
-SystemIdentification<T>::EstimateParameters(
-    const VectorXPoly& polys,
+template<typename ExprType>
+std::pair<typename SystemIdentification<ExprType>::PartialEvalType,
+          typename ExprType::CoefficientType>
+SystemIdentification<ExprType>::EstimateParameters(
+    const VectorXExpr& polys,
     const std::vector<PartialEvalType>& active_var_values) {
   DRAKE_ASSERT(active_var_values.size() > 0);
   const int num_data = active_var_values.size();
@@ -295,19 +295,25 @@ SystemIdentification<T>::EstimateParameters(
 
   // For each datum, build a constraint with an error term.
   for (int datum_num = 0; datum_num < num_data; datum_num++) {
-    VectorXPoly constraint_polys(polys.rows(), 1);
+    VectorXExpr constraint_polys(polys.rows(), 1);
     const PartialEvalType& partial_eval_map = active_var_values[datum_num];
     for (int poly_num = 0; poly_num < polys.rows(); poly_num++) {
-      PolyType partial_poly = polys[poly_num].evaluatePartial(partial_eval_map);
-      PolyType constraint_poly =
-          partial_poly + PolyType(1, error_vartypes[datum_num * polys.rows() +
+      ExprType partial_poly = polys[poly_num].evaluatePartial(partial_eval_map);
+      ExprType constraint_poly =
+          partial_poly + ExprType(1, error_vartypes[datum_num * polys.rows() +
                                                     poly_num]);
       constraint_polys[poly_num] = constraint_poly;
     }
-    problem.AddPolynomialConstraint(
-        constraint_polys, problem_vartypes,
-        Eigen::VectorXd::Zero(polys.rows()),
-        Eigen::VectorXd::Zero(polys.rows()));
+    // The constraint behaviour depends on ExprType, so we dispatch on dynamic
+    // type.  This will optimize out in each template instantiation.
+    const VectorXPoly* constraints_as_polynomials =
+        dynamic_cast<const VectorXPoly*>(&constraint_polys);
+    if (constraints_as_polynomials) {
+      problem.AddPolynomialConstraint(
+          *constraints_as_polynomials, problem_vartypes,
+          Eigen::VectorXd::Constant(polys.rows(), 0),
+          Eigen::VectorXd::Constant(polys.rows(), 0));
+    }
   }
 
   // Create a cost function that is least-squares on the error terms.
@@ -327,7 +333,7 @@ SystemIdentification<T>::EstimateParameters(
     VarType var = vars_to_estimate[i];
     estimates[var] = parameter_variables.value()[i];
   }
-  T error_squared = 0;
+  CoefficientType error_squared = 0;
   for (int i = 0; i < num_err_terms; i++) {
     error_squared += error_variables.value()[i] * error_variables.value()[i];
   }
@@ -339,4 +345,4 @@ SystemIdentification<T>::EstimateParameters(
 }  // namespace drake
 
 template class DRAKEOPTIMIZATION_EXPORT
-drake::solvers::SystemIdentification<double>;
+drake::solvers::SystemIdentification<Polynomiald>;
