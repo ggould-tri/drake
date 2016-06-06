@@ -5,6 +5,8 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/solvers/Optimization.h"
+#include "drake/util/Polynomial.h"
+#include "drake/util/TrigPoly.h"
 
 namespace drake {
 namespace solvers {
@@ -119,11 +121,27 @@ SystemIdentification<ExprType>::GetLumpedParametersFromPolynomials(
       if (!lumped_parameter.size()) { continue; }
       // Factor out any coefficients, so that 'a' and '2*a' are not both
       // considered lumped parameters.
-      ExprType lumped_parameter_polynomial(lumped_parameter.begin(),
-                                           lumped_parameter.end());
-      ExprType normalized =
+      Polynomial<CoefficientType> lumped_parameter_polynomial(
+          lumped_parameter.begin(),
+          lumped_parameter.end());
+      Polynomial<CoefficientType> normalized =
           CanonicalizePolynomial(lumped_parameter_polynomial).second;
-      lumped_parameters.insert(normalized);
+
+      // Build the lumped parameters as appropriate to our specialized type.
+      auto lumped_params_as_polynomials =
+          dynamic_cast<std::set<Polynomial<CoefficientType>>*>(
+              &lumped_parameters);
+      if (lumped_params_as_polynomials) {
+        lumped_params_as_polynomials->insert(normalized);
+      }
+      auto lumped_params_as_trigpolys =
+          dynamic_cast<std::set<TrigPoly<CoefficientType>>*>(
+              &lumped_parameters);
+      if (lumped_params_as_trigpolys) {
+        TrigPoly<CoefficientType> normalized_trigpoly(
+            normalized, poly.getSinCosMap());
+        lumped_params_as_trigpolys->insert(normalized_trigpoly);
+      }
     }
   }
 
@@ -346,3 +364,6 @@ SystemIdentification<ExprType>::EstimateParameters(
 
 template class DRAKEOPTIMIZATION_EXPORT
 drake::solvers::SystemIdentification<Polynomiald>;
+
+template class DRAKEOPTIMIZATION_EXPORT
+drake::solvers::SystemIdentification<TrigPolyd>;

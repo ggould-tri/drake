@@ -41,6 +41,9 @@ class TrigPoly {
   typedef _CoefficientType CoefficientType;
   typedef Polynomial<CoefficientType> PolyType;
   typedef typename PolyType::VarType VarType;
+  typedef typename PolyType::Monomial Monomial;
+  typedef typename PolyType::Term Term;
+
   struct SinCosVars {
     VarType s;
     VarType c;
@@ -103,6 +106,10 @@ class TrigPoly {
 
   /// Returns the underlying Polynomial for this TrigPoly.
   const PolyType& getPolynomial(void) const { return poly; }
+
+  const std::vector<Monomial>& getMonomials() const {
+    return getPolynomial().getMonomials();
+  }
 
   /// Returns the SinCosMap for this TrigPoly.
   const SinCosMap& getSinCosMap(void) const { return sin_cos_map; }

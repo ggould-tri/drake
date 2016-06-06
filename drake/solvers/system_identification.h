@@ -5,7 +5,8 @@
 #include <stdexcept>
 #include <vector>
 
-#include "drake/util/Polynomial.h"
+#include <Eigen/Core>
+
 #include "drake/drakeOptimization_export.h"
 
 namespace drake {
