@@ -64,7 +64,11 @@ class TrigPoly {
 
   /// Constructs a constant TrigPoly.
   // NOLINTNEXTLINE(runtime/explicit) This conversion is desirable.
-  TrigPoly(const CoefficientType& scalar) : poly(scalar) {}
+  TrigPoly(const CoefficientType& scalar) : poly(scalar) {};
+
+  /// Implicit conversion from Polynomial to TrigPoly.
+  // NOLINTNEXTLINE(runtime/explicit) This conversion is desirable.
+  TrigPoly(const PolyType& p) : TrigPoly(p, SinCosMap()) {};
 
   /**
    * Constructs a TrigPoly on the associated Polynomial p, but with the
@@ -280,9 +284,19 @@ class TrigPoly {
     return *this;
   }
 
+  TrigPoly& operator+=(const PolyType& other) {
+    poly += other;
+    return *this;
+  }
+
   TrigPoly& operator-=(const TrigPoly& other) {
     poly -= other.poly;
     sin_cos_map.insert(other.sin_cos_map.begin(), other.sin_cos_map.end());
+    return *this;
+  }
+
+  TrigPoly& operator-=(const PolyType& other) {
+    poly -= other;
     return *this;
   }
 
@@ -312,13 +326,13 @@ class TrigPoly {
     return *this;
   }
 
-  const TrigPoly operator+(const TrigPoly& other) const {
+  const TrigPoly operator+(const PolyType& other) const {
     TrigPoly ret = *this;
     ret += other;
     return ret;
   }
 
-  const TrigPoly operator-(const TrigPoly& other) const {
+  const TrigPoly operator-(const PolyType& other) const {
     TrigPoly ret = *this;
     ret -= other;
     return ret;
@@ -349,6 +363,20 @@ class TrigPoly {
     return ret;
   }
 
+  friend const TrigPoly operator+(const TrigPoly& p,
+                                  const PolyType& other) {
+    TrigPoly ret = p;
+    ret += other;
+    return ret;
+  }
+
+  friend const TrigPoly operator+(const PolyType& other,
+                                  const TrigPoly& p) {
+    TrigPoly ret = p;
+    ret += other;
+    return ret;
+  }
+
   friend const TrigPoly operator-(const TrigPoly& p,
                                   const CoefficientType& scalar) {
     TrigPoly ret = p;
@@ -360,6 +388,20 @@ class TrigPoly {
                                   const TrigPoly& p) {
     TrigPoly ret = -p;
     ret += scalar;
+    return ret;
+  }
+
+  friend const TrigPoly operator-(const TrigPoly& p,
+                                  const PolyType& other) {
+    TrigPoly ret = p;
+    ret -= other;
+    return ret;
+  }
+
+  friend const TrigPoly operator-(const PolyType& other,
+                                  const TrigPoly& p) {
+    TrigPoly ret = -p;
+    ret += other;
     return ret;
   }
 
@@ -407,3 +449,6 @@ std::ostream& operator<<(
 }
 
 typedef TrigPoly<double> TrigPolyd;
+
+/// A column vector of TrigPolyd; used in several optimization classes.
+typedef Eigen::Matrix<TrigPolyd, Eigen::Dynamic, 1> VectorXTrigPoly;

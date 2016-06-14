@@ -66,8 +66,9 @@ SystemIdentification<ExprType>::CanonicalizePolynomial(const ExprType& poly) {
   for (MonomialType& monomial : monomials) {
     monomial.coefficient /= min_coefficient;
   }
-  return std::make_pair(min_coefficient, ExprType(monomials.begin(),
-                                                  monomials.end()));
+  return std::make_pair(min_coefficient,
+                        ExprType(Polynomiald(monomials.begin(),
+                                             monomials.end())));
 }
 
 template<typename ExprType>
@@ -119,29 +120,7 @@ SystemIdentification<ExprType>::GetLumpedParametersFromPolynomials(
         }
       }
       if (!lumped_parameter.size()) { continue; }
-      // Factor out any coefficients, so that 'a' and '2*a' are not both
-      // considered lumped parameters.
-      Polynomial<CoefficientType> lumped_parameter_polynomial(
-          lumped_parameter.begin(),
-          lumped_parameter.end());
-      Polynomial<CoefficientType> normalized =
-          CanonicalizePolynomial(lumped_parameter_polynomial).second;
-
-      // Build the lumped parameters as appropriate to our specialized type.
-      auto lumped_params_as_polynomials =
-          dynamic_cast<std::set<Polynomial<CoefficientType>>*>(
-              &lumped_parameters);
-      if (lumped_params_as_polynomials) {
-        lumped_params_as_polynomials->insert(normalized);
-      }
-      auto lumped_params_as_trigpolys =
-          dynamic_cast<std::set<TrigPoly<CoefficientType>>*>(
-              &lumped_parameters);
-      if (lumped_params_as_trigpolys) {
-        TrigPoly<CoefficientType> normalized_trigpoly(
-            normalized, poly.getSinCosMap());
-        lumped_params_as_trigpolys->insert(normalized_trigpoly);
-      }
+      lumped_parameters.insert(BuildExpr(lumped_parameter, poly, true));
     }
   }
 
@@ -156,6 +135,8 @@ SystemIdentification<ExprType>::GetLumpedParametersFromPolynomials(
 
   return lumping_map;
 }
+
+
 
 template<typename ExprType>
 typename SystemIdentification<ExprType>::VarType
@@ -220,8 +201,8 @@ ExprType SystemIdentification<ExprType>::RewritePolynomialWithLumpedParameters(
         new_working_monomials.push_back(working_monomial);
       }
     }
-    const ExprType factor_polynomial(factor_monomials.begin(),
-                                     factor_monomials.end());
+    const Polynomiald factor_polynomial(factor_monomials.begin(),
+                                        factor_monomials.end());
     const auto& canonicalization = CanonicalizePolynomial(factor_polynomial);
     const CoefficientType coefficient = canonicalization.first;
     const ExprType& canonicalized = canonicalization.second;
@@ -249,7 +230,7 @@ ExprType SystemIdentification<ExprType>::RewritePolynomialWithLumpedParameters(
     working_monomials = new_working_monomials;
   }
 
-  return ExprType(working_monomials.begin(), working_monomials.end());
+  return BuildExpr(working_monomials, poly, false);
 }
 
 template<typename ExprType>
@@ -313,25 +294,16 @@ SystemIdentification<ExprType>::EstimateParameters(
 
   // For each datum, build a constraint with an error term.
   for (int datum_num = 0; datum_num < num_data; datum_num++) {
-    VectorXExpr constraint_polys(polys.rows(), 1);
+    VectorXExpr constraint_exprs(polys.rows(), 1);
     const PartialEvalType& partial_eval_map = active_var_values[datum_num];
     for (int poly_num = 0; poly_num < polys.rows(); poly_num++) {
       ExprType partial_poly = polys[poly_num].evaluatePartial(partial_eval_map);
       ExprType constraint_poly =
           partial_poly + ExprType(1, error_vartypes[datum_num * polys.rows() +
                                                     poly_num]);
-      constraint_polys[poly_num] = constraint_poly;
+      constraint_exprs[poly_num] = constraint_poly;
     }
-    // The constraint behaviour depends on ExprType, so we dispatch on dynamic
-    // type.  This will optimize out in each template instantiation.
-    const VectorXPoly* constraints_as_polynomials =
-        dynamic_cast<const VectorXPoly*>(&constraint_polys);
-    if (constraints_as_polynomials) {
-      problem.AddPolynomialConstraint(
-          *constraints_as_polynomials, problem_vartypes,
-          Eigen::VectorXd::Constant(polys.rows(), 0),
-          Eigen::VectorXd::Constant(polys.rows(), 0));
-    }
+    AddConstraintToProblem(problem, constraint_exprs, problem_vartypes);
   }
 
   // Create a cost function that is least-squares on the error terms.
@@ -359,11 +331,68 @@ SystemIdentification<ExprType>::EstimateParameters(
   return std::make_pair(estimates, std::sqrt(error_squared));
 }
 
+
+// Template specializations for the cases where we must handle Polynomiald and
+// TrigPolyd separately (because of SinCosMap propagation and different
+// Add...Constraint methods):
+
+template<>
+Polynomiald SystemIdentification<Polynomiald>::BuildExpr(
+    const std::vector<Polynomiald::Monomial>& monomials,
+    const Polynomiald& source_poly,
+    bool canonicalize) {
+  if (canonicalize) {
+    return CanonicalizePolynomial(
+        Polynomiald(monomials.begin(), monomials.end())).second;
+  } else {
+    return Polynomiald(monomials.begin(), monomials.end());
+  }
+}
+
+template<>
+TrigPolyd SystemIdentification<TrigPolyd>::BuildExpr(
+    const std::vector<TrigPolyd::Monomial>& monomials,
+    const TrigPolyd& source_poly,
+    bool canonicalize) {
+  if (canonicalize) {
+    const Polynomiald poly =
+        CanonicalizePolynomial(
+            Polynomiald(monomials.begin(), monomials.end()))
+        .second.getPolynomial();
+    return TrigPolyd(poly, source_poly.getSinCosMap());
+  } else {
+    const Polynomiald poly = Polynomiald(monomials.begin(), monomials.end());
+    return TrigPolyd(poly, source_poly.getSinCosMap());
+  }
+}
+
+template<>
+void SystemIdentification<Polynomiald>::AddConstraintToProblem(
+    Drake::OptimizationProblem& problem,
+    const VectorXPoly& constraints,
+    const std::vector<Polynomiald::VarType>& problem_vartypes) {
+  problem.AddPolynomialConstraint(
+      constraints, problem_vartypes,
+      Eigen::VectorXd::Zero(constraints.rows()),
+      Eigen::VectorXd::Zero(constraints.rows()));
+}
+
+template<>
+void SystemIdentification<TrigPolyd>::AddConstraintToProblem(
+    Drake::OptimizationProblem& problem,
+    const VectorXTrigPoly& constraints,
+    const std::vector<TrigPolyd::VarType>& problem_vartypes) {
+  //  problem.AddTrigPolyConstraint(
+  //      constraints, problem_vartypes,
+  //      Eigen::VectorXd::Zero(polys.rows()),
+  //      Eigen::VectorXd::Zero(polys.rows()));
+}
+
 }  // namespace solvers
 }  // namespace drake
 
-template class DRAKEOPTIMIZATION_EXPORT
-drake::solvers::SystemIdentification<Polynomiald>;
 
-template class DRAKEOPTIMIZATION_EXPORT
-drake::solvers::SystemIdentification<TrigPolyd>;
+// NOTE: gcc requires that these NOT be marked DRAKEOPTIMIZATION_EXPORT to
+// avoid ambiguity with the export mark on the class template declaration.
+template class drake::solvers::SystemIdentification<Polynomiald>;
+template class drake::solvers::SystemIdentification<TrigPolyd>;

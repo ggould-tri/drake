@@ -8,6 +8,7 @@
 #include <Eigen/Core>
 
 #include "drake/drakeOptimization_export.h"
+#include "drake/solvers/Optimization.h"
 
 namespace drake {
 namespace solvers {
@@ -156,6 +157,31 @@ class DRAKEOPTIMIZATION_EXPORT SystemIdentification {
    */
   static std::pair<CoefficientType, ExprType>
   CanonicalizePolynomial(const ExprType& poly);
+
+  /// Constructs a new ExprType consisting of a sum of the given @p monomials.
+  /**
+   * If @p canonicalize is set, the resulting ExprType will be have
+   * canonicalized coefficients (via CanonicalizePolynomial) and any metadata
+   * (such as a SinCosMap) copied from the @p source_poly.
+   */
+  static ExprType BuildExpr(
+      const std::vector<MonomialType>& monomials,
+      const ExprType& source_poly,
+      bool canonicalize);
+
+  /// Adds a constraint that the given vector of constraint ExprType == 0.
+  /**
+   * Given:
+   *  * A Problem @p problem,
+   *  * a list of ExprType @p constraints, and
+   *  * a list of @p problem_vartypes mapping positions in the problem's
+   *    bindings to VarTypes in the constraint polynomials,
+   * Add a constraint to @p problem that @p constraints evaluate to 0.
+   */
+  static void AddConstraintToProblem(
+      Drake::OptimizationProblem& problem,  //< non-const; altered in place.
+      const VectorXExpr& constraints,
+      const std::vector<VarType>& problem_vartypes);
 
   /// Obtain a new variable ID not already in vars_in_use.  The string part of
   /// the variable's name will be prefix.
