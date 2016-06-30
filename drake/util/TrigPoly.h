@@ -338,6 +338,18 @@ class TrigPoly {
     return ret;
   }
 
+  const TrigPoly operator+(const TrigPoly& other) const {
+    TrigPoly ret = *this;
+    ret += other;
+    return ret;
+  }
+
+  const TrigPoly operator-(const TrigPoly& other) const {
+    TrigPoly ret = *this;
+    ret -= other;
+    return ret;
+  }
+
   const TrigPoly operator-() const {
     TrigPoly ret = -(*this);
     return ret;

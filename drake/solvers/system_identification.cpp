@@ -299,8 +299,8 @@ SystemIdentification<ExprType>::EstimateParameters(
     for (int poly_num = 0; poly_num < polys.rows(); poly_num++) {
       ExprType partial_poly = polys[poly_num].evaluatePartial(partial_eval_map);
       ExprType constraint_poly =
-          partial_poly + ExprType(1, error_vartypes[datum_num * polys.rows() +
-                                                    poly_num]);
+          partial_poly +
+          Polynomiald(1, error_vartypes[datum_num * polys.rows() + poly_num]);
       constraint_exprs[poly_num] = constraint_poly;
     }
     AddConstraintToProblem(problem, constraint_exprs, problem_vartypes);
@@ -368,7 +368,7 @@ TrigPolyd SystemIdentification<TrigPolyd>::BuildExpr(
 
 template<>
 void SystemIdentification<Polynomiald>::AddConstraintToProblem(
-    Drake::OptimizationProblem& problem,
+    drake::solvers::OptimizationProblem& problem,
     const VectorXPoly& constraints,
     const std::vector<Polynomiald::VarType>& problem_vartypes) {
   problem.AddPolynomialConstraint(
@@ -379,7 +379,7 @@ void SystemIdentification<Polynomiald>::AddConstraintToProblem(
 
 template<>
 void SystemIdentification<TrigPolyd>::AddConstraintToProblem(
-    Drake::OptimizationProblem& problem,
+    drake::solvers::OptimizationProblem& problem,
     const VectorXTrigPoly& constraints,
     const std::vector<TrigPolyd::VarType>& problem_vartypes) {
   //  problem.AddTrigPolyConstraint(

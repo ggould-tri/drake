@@ -179,7 +179,7 @@ class DRAKEOPTIMIZATION_EXPORT SystemIdentification {
    * Add a constraint to @p problem that @p constraints evaluate to 0.
    */
   static void AddConstraintToProblem(
-      Drake::OptimizationProblem& problem,  //< non-const; altered in place.
+      drake::solvers::OptimizationProblem& problem,
       const VectorXExpr& constraints,
       const std::vector<VarType>& problem_vartypes);
 
