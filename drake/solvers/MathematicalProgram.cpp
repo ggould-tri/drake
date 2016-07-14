@@ -18,20 +18,23 @@ enum ProblemAttributes {
   kError = 1 << 0,  ///< Do not use, to avoid & vs. && typos.
   kGenericCost                     = 1 << 1,
   kGenericConstraint               = 1 << 2,
-  kQuadraticCost                   = 1 << 3,
-  kQuadraticConstraint             = 1 << 4,
-  kLinearCost                      = 1 << 5,
-  kLinearConstraint                = 1 << 6,
-  kLinearEqualityConstraint        = 1 << 7,
-  kLinearComplementarityConstraint = 1 << 8
+  kTrivialQuadraticCost            = 1 << 3,
+  kQuadraticCost                   = 1 << 4,
+  kQuadraticConstraint             = 1 << 5,
+  kLinearCost                      = 1 << 6,
+  kLinearConstraint                = 1 << 7,
+  kLinearEqualityConstraint        = 1 << 8,
+  kLinearComplementarityConstraint = 1 << 9
 };
 typedef uint32_t AttributesSet;
 
 // TODO(ggould-tri) Refactor these capability advertisements into the
 // solver wrappers themselves.
 
-// Solver for simple linear systems of equalities
-AttributesSet kLinearSystemSolverCapabilities = kLinearEqualityConstraint;
+// Solver for simple linear systems of equalities, resolving free variables in
+// the direction of zero.
+AttributesSet kLinearSystemSolverCapabilities = (
+    kLinearEqualityConstraint | kTrivialQuadraticCost);
 
 // Solver for equality-constrained QPs
 AttributesSet kEqualityConstrainedQPCapabilities = (
@@ -74,6 +77,9 @@ void MathematicalProgram::AddGenericCost() {
 }
 void MathematicalProgram::AddGenericConstraint() {
   required_capabilities_ |= kGenericConstraint;
+}
+void MathematicalProgram::AddTrivialQuadraticCost() {
+  required_capabilities_ |= kTrivialQuadraticCost;
 }
 void MathematicalProgram::AddQuadraticCost() {
   required_capabilities_ |= kQuadraticCost;

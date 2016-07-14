@@ -57,6 +57,9 @@ class DRAKEOPTIMIZATION_EXPORT MathematicalProgram {
   void AddGenericConstraint();
 
   /// Call if problem requires minimizing some quadratic.
+  void AddTrivialQuadraticCost();
+
+  /// Call if problem requires minimizing some quadratic.
   void AddQuadraticCost();
 
   /// Call if problem requires bounding some quadratic.

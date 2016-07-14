@@ -107,6 +107,9 @@ class QuadraticConstraint : public Constraint {
     return b_;
   }
 
+  /// Returns true if this constraint is least-squares about zero.
+  bool isTrivial() { return Q_.isIdentity() && b_.isZero(); }
+
  private:
   Eigen::MatrixXd Q_;
   Eigen::VectorXd b_;

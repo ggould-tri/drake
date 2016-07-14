@@ -358,7 +358,11 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
    */
   void AddQuadraticCost(std::shared_ptr<QuadraticConstraint> const& obj,
                         VariableList const& vars) {
-    problem_type_.AddQuadraticCost();
+    if (obj->Q().isIdentity() && obj->b().isZero()) {
+      problem_type_.AddTrivialQuadraticCost();
+    } else {
+      problem_type_.AddQuadraticCost();
+    }
     quadratic_costs_.push_back(Binding<QuadraticConstraint>(obj, vars));
   }
 

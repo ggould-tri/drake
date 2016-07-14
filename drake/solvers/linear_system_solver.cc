@@ -23,10 +23,14 @@ SolutionResult LinearSystemSolver::Solve(OptimizationProblem& prog) const {
 
   DRAKE_ASSERT(prog.generic_constraints().empty());
   DRAKE_ASSERT(prog.generic_costs().empty());
-  DRAKE_ASSERT(prog.quadratic_costs().empty());
   DRAKE_ASSERT(prog.linear_constraints().empty());
   DRAKE_ASSERT(prog.bounding_box_constraints().empty());
   DRAKE_ASSERT(prog.linear_complementarity_constraints().empty());
+
+  bool least_squares_from_zero =
+      (prog.quadratic_costs().size() == 1) &&
+      prog.quadratic_costs().front().constraint()->isTrivial();
+  DRAKE_ASSERT(least_squares_from_zero || prog.quadratic_costs().empty());
 
   Eigen::MatrixXd Aeq = Eigen::MatrixXd::Zero(num_constraints, prog.num_vars());
   // TODO(naveenoid) : use a sparse matrix here?
