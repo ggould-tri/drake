@@ -6,6 +6,8 @@
 /// compile-time dimension checking.  Instead, this module provides some
 /// limited runtime dimension checking.
 
+#include <string>
+
 #include <Eigen/Core>
 
 #include "drake/common/drake_assert.h"
@@ -82,6 +84,7 @@ class Dimensioned {
   //@}
 
   bool same_dimension(const Dimensioned<T> other) const;
+  std::string dimension_str() const;
 
   inline Dimensioned<T> operator*(const Dimensioned<T>& rhs) const {
     int8_t dims[kNumDimensions];
@@ -91,31 +94,32 @@ class Dimensioned {
     return Dimensioned<T>(value_ * rhs.value_, dims);
   }
 
-  inline Dimensioned<T> operator/(const Dimensioned<T>& rhs) const {
-    int8_t dims[kNumDimensions];
-    for (const BaseDimension& i : all_dimensions) {
-      dims[i] = dimension_exponents_[i] - rhs.dimension_exponents_[i];
-    }
-    return Dimensioned<T>(value_ / rhs.value_, dims);
+  // Defined in the cc because this varies based on instance.
+  Dimensioned<T> operator/(const Dimensioned<T>& rhs) const;
+
+  inline void check_same_dimensions(const Dimensioned<T>& other) const {
+    if (same_dimension(other)) return;
+    DRAKE_ABORT_MSG(("Tried to mix " + dimension_str() +
+                     " with " + other.dimension_str()).c_str());
   }
 
   inline Dimensioned<T> operator+(const Dimensioned<T>& rhs) const {
-    DRAKE_DEMAND(same_dimension(rhs));
+    check_same_dimensions(rhs);
     return Dimensioned<T>(value_ + rhs.value_, dimension_exponents_);
   }
 
   inline Dimensioned<T> operator-(const Dimensioned<T>& rhs) const {
-    DRAKE_DEMAND(same_dimension(rhs));
+    check_same_dimensions(rhs);
     return Dimensioned<T>(value_ - rhs.value_, dimension_exponents_);
   }
 
   inline bool operator==(const Dimensioned<T>& rhs) const {
-    DRAKE_DEMAND(same_dimension(rhs));
+    check_same_dimensions(rhs);
     return value_ == rhs.value_;
   }
 
   inline bool operator<(const Dimensioned<T>& rhs) const {
-    DRAKE_DEMAND(same_dimension(rhs));
+    check_same_dimensions(rhs);
     return value_ < rhs.value_;
   }
 

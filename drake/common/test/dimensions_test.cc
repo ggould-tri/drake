@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
+#include "drake/common/polynomial.h"
 
 /// Test the most basic functionality of the Dimensions module to see if
 /// things are working as expected.
@@ -17,8 +18,8 @@ GTEST_TEST(dimensions_test, SmokeTest) {
   EXPECT_EQ(one_meter * one_kilogram * one_hertz / one_second,
             one_newton);
   EXPECT_EQ((one_meter + one_meter), Quantity::meters(2.));
-  EXPECT_DEATH(one_meter + one_second, "assertion");
-  EXPECT_DEATH(one_meter == one_second, "assertion");
+  EXPECT_DEATH(one_meter + one_second, "Tried to mix");
+  EXPECT_DEATH(one_meter == one_second, "Tried to mix");
   EXPECT_EQ(one_meter, 1 * one_meter);
   EXPECT_EQ(one_meter, 1 * Quantity::meter());
 
@@ -54,5 +55,14 @@ GTEST_TEST(dimesions_test, MemberOfMatrix) {
 
 /// Test that we can create a Dimensioned<Polynomial> and get a sensible result.
 GTEST_TEST(dimensions_test, DimensionedPolynomial) {
-  // TODO(ggould-tri) Write this test.
+  typedef Polynomial<double> PolyType;
+  typedef drake::Dimensioned<PolyType> DimPoly;
+
+  // Test basic operations
+  DimPoly x = PolyType("x") * DimPoly::meter();
+  DimPoly x_plus_one = x + (1 * DimPoly::meter());
+  DimPoly y = PolyType("y") * DimPoly::second();
+  EXPECT_EQ(x_plus_one * y, x * y + y * DimPoly::meter());
+
+  EXPECT_DEATH(x / y, "abort");  // Polynomial doesn't provide division.
 }
