@@ -4,10 +4,26 @@
 namespace drake {
 
 template<typename T>
+Dimensioned<T>::Dimensioned()
+    : value_(-99) {
+  for (const BaseDimension& i : all_dimensions) {
+    dimension_exponents_[i] = -99;  // Arbitrary useless value.
+  }
+}
+
+template<typename T>
+Dimensioned<T>::Dimensioned(const T& value)
+    : value_(value) {
+  for (const BaseDimension& i : all_dimensions) {
+    dimension_exponents_[i] = -99;  // Arbitrary useless value.
+  }
+}
+
+template<typename T>
 Dimensioned<T>::Dimensioned(
     const T& value,
     const int8_t dimension_exponents[kNumDimensions])
-  : value_(value) {
+    : value_(value) {
   for (const BaseDimension& i : all_dimensions) {
     dimension_exponents_[i] = dimension_exponents[i];
   }

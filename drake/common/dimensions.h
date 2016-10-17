@@ -49,6 +49,14 @@ constexpr BaseDimension all_dimensions[kNumDimensions] = {
 template<typename T>
 class Dimensioned {
  public:
+  /// A constructor that creates a deliberately invalid and useless value,
+  /// because Eigen insists on calling the default initializer sometimes.
+  Dimensioned<T>();
+
+  /// A constructor that creates a deliberately invalid and useless value,
+  /// because Eigen insists on calling the zero initializer sometimes.
+  Dimensioned<T>(const T&);
+
   //@{
   /// Unit constructors.
   static inline Dimensioned<T> meters(T quantity) {

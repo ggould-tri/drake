@@ -1,7 +1,8 @@
 #include "drake/common/dimensions.h"
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
+#include "drake/common/eigen_types.h"
 
 /// Test the most basic functionality of the Dimensions module to see if
 /// things are working as expected.
@@ -31,7 +32,24 @@ GTEST_TEST(dimensions_test, SmokeTest) {
 /// Test that we can create an Eigen matrix of Dimensioned<double> and get
 /// a sensible result.
 GTEST_TEST(dimesions_test, MemberOfMatrix) {
-  // TODO(ggould-tri) Write this test.
+  typedef drake::Dimensioned<double> Quantity;
+  drake::Vector1<Quantity> meter_1x1;
+  meter_1x1 << (1 * Quantity::meter());
+  drake::Vector1<Quantity> square_meter_1x1 = meter_1x1 * meter_1x1;
+  EXPECT_EQ(square_meter_1x1[0], 1 * Quantity::meter() * Quantity::meter());
+
+  Eigen::Matrix<Quantity, 2, 1> meter_second_vector;
+  meter_second_vector << 1 * Quantity::meter(), 1 * Quantity::second();
+  auto meter_second_matrix =
+      meter_second_vector * meter_second_vector.transpose();
+  EXPECT_EQ(meter_second_matrix(0, 0),
+            1 * Quantity::meter() * Quantity::meter());
+  EXPECT_EQ(meter_second_matrix(0, 1),
+            1 * Quantity::meter() * Quantity::second());
+  EXPECT_EQ(meter_second_matrix(1, 0),
+            1 * Quantity::meter() * Quantity::second());
+  EXPECT_EQ(meter_second_matrix(1, 1),
+            1 * Quantity::second() * Quantity::second());
 }
 
 /// Test that we can create a Dimensioned<Polynomial> and get a sensible result.
