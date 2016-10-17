@@ -1,5 +1,8 @@
 # Build tests for Drake common utilities.
 
+drake_add_cc_test(dimensions_test)
+target_link_libraries(dimensions_test drakeCommon)
+
 drake_add_cc_test(functional_form_test)
 target_link_libraries(functional_form_test drakeCommon)
 

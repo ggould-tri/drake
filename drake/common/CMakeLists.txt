@@ -10,6 +10,7 @@ configure_file(drake_path.cc.in ${drake_path_cc})
 
 # List all source files used to build libdrakeCommon.
 set(sources
+  dimensions.cc
   drake_assert.cc
   ${drake_path_cc}
   drake_throw.cc
@@ -23,6 +24,7 @@ set(sources
 # are available elsewhere via #include "drake/common/xxx.h".
 set(installed_headers
   constants.h
+  dimensions.h
   drake_assert.h
   drake_deprecated.h
   drake_export.h
