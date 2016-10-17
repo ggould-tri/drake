@@ -66,3 +66,6 @@ GTEST_TEST(dimensions_test, DimensionedPolynomial) {
 
   EXPECT_DEATH(x / y, "abort");  // Polynomial doesn't provide division.
 }
+
+/// Test with the manipulator equation for an Acrobot.
+// TODO(ggould-tri) Implement this.
