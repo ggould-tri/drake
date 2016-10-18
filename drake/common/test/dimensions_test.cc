@@ -4,6 +4,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/polynomial.h"
+#include "drake/common/trig_poly.h"
 
 /// Test the most basic functionality of the Dimensions module to see if
 /// things are working as expected.
@@ -67,5 +68,48 @@ GTEST_TEST(dimensions_test, DimensionedPolynomial) {
   EXPECT_DEATH(x / y, "abort");  // Polynomial doesn't provide division.
 }
 
-/// Test with the manipulator equation for an Acrobot.
-// TODO(ggould-tri) Implement this.
+/// Test with the manipulator equation for an Acrobot.  Equation is from
+/// http://underactuated.csail.mit.edu/underactuated.html?chapter=3 s3.1.1.
+GTEST_TEST(dimensions_test, Acrobot) {
+  typedef TrigPoly<double> PolyType;
+  typedef drake::Dimensioned<PolyType> DimPoly;
+  DimPoly inertia = DimPoly::kilogram() * DimPoly::meter() * DimPoly::meter();
+  DimPoly i1 = PolyType(Polynomiald("I", 1)) * inertia;
+  DimPoly i2 = PolyType(Polynomiald("I", 2)) * inertia;
+  DimPoly m1 = PolyType(Polynomiald("m", 1)) * DimPoly::kilogram();
+  DimPoly m2 = PolyType(Polynomiald("m", 2)) * DimPoly::kilogram();
+  DimPoly l1 = PolyType(Polynomiald("l", 1)) * DimPoly::meter();
+  DimPoly lc1 = l1 / 2;
+  DimPoly l2 = PolyType(Polynomiald("l", 2)) * DimPoly::meter();
+  DimPoly lc2 = l2 / 2;
+  DimPoly theta1 = PolyType(Polynomiald("th", 1),
+                            Polynomiald("s", 1), Polynomiald("c", 1));
+  DimPoly theta2 = PolyType(Polynomiald("th", 2),
+                            Polynomiald("s", 2), Polynomiald("c", 2));
+  DimPoly theta1dot = PolyType(Polynomiald("thd", 1)) / DimPoly::second();
+  DimPoly theta2dot = PolyType(Polynomiald("thd", 2)) / DimPoly::second();
+  DimPoly theta1dotdot = PolyType(Polynomiald("thdd", 1)) /
+      (DimPoly::second() * DimPoly::second());
+  DimPoly theta2dotdot = PolyType(Polynomiald("thdd", 2)) /
+      (DimPoly::second() * DimPoly::second());
+  DimPoly g = PolyType(Polynomiald("g", 1)) *
+      DimPoly::meter() / DimPoly::second() / DimPoly::second();
+
+  Eigen::Matrix<PolyType, 2, 2> H;
+  H << (i1 + i2 + (m2 * l1 * l1) + 2 * m2 * l1 * lc2 * cos(theta2)),
+      (i2 + m2 * l1 * lc2 * cos(theta2)),
+      (i2 + m2 * l1 * lc2 * cos(theta2)),
+      i2;
+  Eigen::Matrix<PolyType, 2, 2> C;
+  C << (-2 * m2 * l1 * lc2 * sin(theta2) * theta2dot),
+      (-m2 * l1 * lc2 * sin(theta2) * theta2dot),
+      (m2 * l1 * lc2 * sin(theta2) * theta1dot),
+      0;
+  Eigen::Matrix<PolyType, 2, 1> G;
+  G << ((m1 * g * lc1 * sin(theta1)) +
+        (m2 * g * (l1 * sin(theta1) + lc2 * sin(theta1 + theta2)))),
+      (m2 * g * lc2 * sin(theta1 + theta2));
+  Eigen::Matrix<PolyType, 2, 1> B;
+  B << 0, 1;
+  
+}
