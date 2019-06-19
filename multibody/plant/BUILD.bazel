@@ -227,6 +227,27 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_library(
+    name = "element_collection",
+    srcs = ["element_collection.cc"],
+    hdrs = ["element_collection.h"],
+    deps = [
+        ":plant",
+    ],
+)
+
+drake_cc_googletest(
+    name = "element_collection_test",
+    srcs = [
+        "test/element_collection_test.cc",
+        "test/multibody_plant_fixture.h",
+    ],
+    deps = [
+        ":element_collection",
+        "//multibody/parsing",
+    ],
+)
+
 drake_cc_googletest(
     name = "implicit_stribeck_solver_test",
     deps = [
@@ -294,6 +315,10 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "multibody_plant_introspection_test",
+    srcs = [
+        "test/multibody_plant_fixture.h",
+        "test/multibody_plant_introspection_test.cc",
+    ],
     data = [
         "//examples/atlas:models",
         "//examples/kuka_iiwa_arm/models",
