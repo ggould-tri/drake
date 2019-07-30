@@ -246,6 +246,11 @@ drake_cc_googletest(
         ":element_collection",
         "//multibody/parsing",
     ],
+    data = [
+        "//examples/atlas:models",
+        "//examples/kuka_iiwa_arm/models",
+        "//examples/simple_gripper:simple_gripper_models",
+    ],
 )
 
 drake_cc_googletest(
