@@ -1,0 +1,58 @@
+<?xml version="1.0"?>
+<robot name='collision_remover_test'>
+  <!-- Used by `collision_remover_test.cc`; the topology here must match that
+       described in the comments of that file. -->
+  <link name='left_bar'>
+    <inertial>
+      <mass value="1"/>
+      <origin xyz="-0.5 0 0"/>
+      <inertia
+          ixx="1" iyy="1" izz="1"
+          ixy="0" ixz="0" iyz="0"/>
+    </inertial>
+    <collision>
+      <origin xyz="0 0 -.5"/>
+      <geometry>
+        <cylinder length=".75" radius=".01"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name='left_joint' type='revolute'>
+    <parent link="world"/>
+    <child link="left_bar"/>
+    <origin xyz="-0.5 0 0"/>
+    <axis xyz="0 0 1"/>
+  </joint>
+
+  <link name='right_box'>
+    <inertial>
+      <mass value="1"/>
+      <origin xyz="10.5 0 0"/>
+      <inertia
+          ixx="1" iyy="1" izz="1"
+          ixy="0" ixz="0" iyz="0"/>
+    </inertial>
+  </link>
+  <joint name='right_joint' type='prismatic'>
+    <parent link="world"/>
+    <child link="right_box"/>
+    <origin xyz="0.5 0 0"/>
+    <axis xyz="1 0 0"/>
+  </joint>
+
+  <link name='sphere'>
+    <inertial>
+      <mass value="1"/>
+      <origin xyz="0 1 0"/>
+      <inertia
+          ixx="1" iyy="1" izz="1"
+          ixy="0" ixz="0" iyz="0"/>
+    </inertial>
+    <collision>
+      <origin xyz="0 1 0"/>
+      <geometry>
+       <sphere radius=".01"/>
+      </geometry>
+    </collision>
+  </link>
+</robot>

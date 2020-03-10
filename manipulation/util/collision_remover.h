@@ -18,8 +18,9 @@ namespace util {
 /// Given a `MultibodyPlant<double>` and its accompanying
 /// `SceneGraph<double>`, this class provides a mechanism for adjusting a
 /// `Context<double>` of that plant so that that specificed bodies are no
-/// longer colliding.  This is intended for heuristically projecting randomly
-/// generated states to similar but collision-free neighbors.
+/// longer colliding.  This is intended for heuristically projecting
+/// programatically generated states (eg from randomized scenarios) to similar
+/// but collision-free neighbors.
 ///
 /// Because the IK problems involved can be complex, callers with complex
 /// scenes will wish to call `AdjustPositions` repeatedly with chosen subsets
@@ -56,10 +57,11 @@ class CollisionRemover {
   /// `plant->GetPositions(diagram->GetSubsystemContext(*plant, context))`
   /// from a known good context value.
   ///
-  /// If `bodies_to_deconflict` is set to `nullopt` then uses the context's
-  /// pre-existing collision graph.  This is typically clumsy and expensive to
-  /// run and can be quite brittle or even nondeterministic; you should run it
-  /// only with a small number of DOFs in the `..._to_adjust` parameters.
+  /// If `bodies_to_deconflict` is set to `nullopt` then this uses the
+  /// context's pre-existing collision graph.  This is typically clumsy and
+  /// expensive to run and can be quite brittle or even nondeterministic; you
+  /// should run it only with a small number of DOFs in the `..._to_adjust`
+  /// parameters.
   ///
   /// @return true on success, ie no collisions remain among the bodies.
   ///

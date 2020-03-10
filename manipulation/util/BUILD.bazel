@@ -50,6 +50,18 @@ drake_cc_library(
     ],
 )
 
+drake_cc_googletest(
+    name = "collision_remover_test",
+    deps = [
+        ":collision_remover",
+        "//common:find_resource",
+        "//multibody/parsing",
+    ],
+    data = [
+        "test/collision_remover_test.urdf",
+    ],
+)
+
 drake_py_binary(
     name = "geometry_inspector",
     srcs = ["geometry_inspector.py"],
