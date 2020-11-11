@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <optional>
 
 #include <gtest/gtest.h>
 
@@ -9,12 +10,14 @@
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/test_utilities/symbolic_test_util.h"
 #include "drake/common/yaml/yaml_read_archive.h"
+#include "drake/common/yaml/yaml_write_archive.h"
 
 using drake::symbolic::Expression;
 using drake::symbolic::test::ExprEqual;
 using drake::symbolic::Variable;
 using drake::symbolic::Variables;
 using drake::yaml::YamlReadArchive;
+using drake::yaml::YamlWriteArchive;
 
 namespace drake {
 namespace schema {
@@ -364,6 +367,83 @@ value: !Deterministic { value: 2.0 }
       std::exception,
       ".*unsupported type tag !Deterministic while selecting a variant<> entry"
       " for std::variant<.*> value.*");
+}
+
+// Check the serialization of optional stochastic structures.
+struct OptionalStruct {
+  std::optional<DistributionVariant> optional_dist;
+  std::optional<DistributionVectorVariantX> optional_dist_vec;
+
+  template <typename Archive>
+  void Serialize(Archive* a) {
+    a->Visit(DRAKE_NVP(optional_dist));
+    a->Visit(DRAKE_NVP(optional_dist_vec));
+  }
+};
+
+GTEST_TEST(StochasticTest, OptionalTest) {
+  // First, as a baseline, prove the empty case:
+  {
+    const char* base_case = "{}";
+    OptionalStruct optionals;
+    YamlReadArchive(YAML::Load(base_case)).Accept(&optionals);
+    EXPECT_FALSE(optionals.optional_dist.has_value());
+    EXPECT_FALSE(optionals.optional_dist_vec.has_value());
+    YamlWriteArchive writer;
+    writer.Accept(optionals);
+    EXPECT_EQ(writer.EmitString(), "root:\n");
+  }
+
+  {
+    const char* deterministic = R"""(
+optional_dist: 2
+)""";
+    OptionalStruct optionals;
+    YamlReadArchive(YAML::Load(deterministic)).Accept(&optionals);
+    EXPECT_TRUE(optionals.optional_dist.has_value());
+    EXPECT_TRUE(IsDeterministic(*optionals.optional_dist));
+    EXPECT_EQ(GetDeterministicValue(*optionals.optional_dist), 2.);
+    EXPECT_FALSE(optionals.optional_dist_vec.has_value());
+    YamlWriteArchive writer;
+    writer.Accept(optionals);
+    EXPECT_EQ(writer.EmitString(), R"""(root:
+  optional_dist: 2.0
+)""");
+  }
+
+  {
+    const char* distribution = R"""(
+optional_dist: !Uniform {min: 1.0, max: 2.0}
+)""";
+    OptionalStruct optionals;
+    YamlReadArchive(YAML::Load(distribution)).Accept(&optionals);
+    EXPECT_TRUE(optionals.optional_dist.has_value());
+    EXPECT_FALSE(IsDeterministic(*optionals.optional_dist));
+    EXPECT_FALSE(optionals.optional_dist_vec.has_value());
+    YamlWriteArchive writer;
+    writer.Accept(optionals);
+    EXPECT_EQ(writer.EmitString(), R"""(root:
+  optional_dist: !Uniform
+    min: 1.0
+    max: 2.0
+)""");
+  }
+
+  {
+    const char* distribution = R"""(
+optional_dist_vec: !DeterministicVector { value: [ 1.0, 2.0 ] }
+)""";
+    OptionalStruct optionals;
+    YamlReadArchive(YAML::Load(distribution)).Accept(&optionals);
+    EXPECT_FALSE(optionals.optional_dist.has_value());
+    EXPECT_TRUE(optionals.optional_dist_vec.has_value());
+    EXPECT_TRUE(IsDeterministic(*optionals.optional_dist_vec));
+    YamlWriteArchive writer;
+    writer.Accept(optionals);
+    EXPECT_EQ(writer.EmitString(), R"""(root:
+  optional_dist_vec: !DeterministicVector { value: [ 1.0, 2.0 ] }
+)""");
+  }
 }
 
 }  // namespace
