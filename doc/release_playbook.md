@@ -114,13 +114,13 @@ the main body of the document:
     sure that the nightly build git sha from the prior step matches the
     ``newest_commit`` whose changes are enumerated in the notes.
 11. Prepare the binaries
-   1. Make a local folder, maybe ``$HOME/tmp/v0.N.0``
-   2. Fetch all the things (
-      [https://drake-jenkins.csail.mit.edu/view/Packaging/job/mac-catalina-unprovisioned-clang-bazel-nightly-snopt-packaging/](https://drake-jenkins.csail.mit.edu/view/Packaging/job/mac-catalina-unprovisioned-clang-bazel-nightly-snopt-packaging/)
-      and
-      [https://drake-jenkins.csail.mit.edu/view/Packaging/job/linux-bionic-unprovisioned-gcc-bazel-nightly-snopt-packaging/](https://drake-jenkins.csail.mit.edu/view/Packaging/job/linux-bionic-unprovisioned-gcc-bazel-nightly-snopt-packaging/)
-      and
-      [https://drake-jenkins.csail.mit.edu/view/Packaging/job/linux-focal-unprovisioned-gcc-bazel-nightly-snopt-packaging/)](https://drake-jenkins.csail.mit.edu/view/Packaging/job/linux-focal-unprovisioned-gcc-bazel-nightly-snopt-packaging/)
+    1. Make a local folder, maybe ``$HOME/tmp/v0.N.0``
+    2. Fetch all the things (
+       [https://drake-jenkins.csail.mit.edu/view/Packaging/job/mac-catalina-unprovisioned-clang-bazel-nightly-snopt-packaging/](https://drake-jenkins.csail.mit.edu/view/Packaging/job/mac-catalina-unprovisioned-clang-bazel-nightly-snopt-packaging/)
+       and
+       [https://drake-jenkins.csail.mit.edu/view/Packaging/job/linux-bionic-unprovisioned-gcc-bazel-nightly-snopt-packaging/](https://drake-jenkins.csail.mit.edu/view/Packaging/job/linux-bionic-unprovisioned-gcc-bazel-nightly-snopt-packaging/)
+       and
+       [https://drake-jenkins.csail.mit.edu/view/Packaging/job/linux-focal-unprovisioned-gcc-bazel-nightly-snopt-packaging/)](https://drake-jenkins.csail.mit.edu/view/Packaging/job/linux-focal-unprovisioned-gcc-bazel-nightly-snopt-packaging/)
        * ``wget https://drake-packages.csail.mit.edu/drake/nightly/drake-YYYYMMDD-bionic.tar.gz``
        * ``wget https://drake-packages.csail.mit.edu/drake/nightly/drake-YYYYMMDD-bionic.tar.gz.sha512``
        * ``wget https://drake-packages.csail.mit.edu/drake/nightly/drake-YYYYMMDD-focal.tar.gz``

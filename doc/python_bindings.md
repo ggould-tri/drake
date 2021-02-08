@@ -156,12 +156,15 @@ After following the above install steps, check to ensure you can import
 python3 -c 'import pydrake; print(pydrake.__file__)'
 ```
 
-<div class="note">If you are using Gurobi, you must either have it installed in the suggested
-location under <code class="highlighter-rouge">/opt/...</code> mentioned in
-<a class="reference internal" href="bazel.html#gurobi"><span class="std std-ref">Gurobi 9.0.2</span></a>, or you must ensure
-that you define the <code class="highlighter-rouge">${GUROBI_HOME}</code> environment variable, or specify
-<code class="highlighter-rouge">${GUROBI_INCLUDE_DIR}</code> via CMake.
-</div>
+{% include post-components/note.html
+    content='If you are using Gurobi, you must either have it installed in
+    the suggested location under <code class="highlighter-rouge">/opt/...</code>
+    mentioned in <a class="reference internal" href="bazel.html#gurobi">
+    <span class="std std-ref">Gurobi 9.0.2</span></a>, or you must ensure
+    that you define the <code class="highlighter-rouge">${GUROBI_HOME}</code>
+    environment variable, or specify
+    <code class="highlighter-rouge">${GUROBI_INCLUDE_DIR}</code> via CMake.'}
+
 
 ##### What's Available from Python
 
@@ -428,9 +431,10 @@ if __name__ == "__main__":
 ```
 
 
-<div class="note">
-If you are developing in Drake and are using the `drake_py_unittest` macro, you can specify the argument `--trace=user` to get the same behavior.
-</div>
+{% include post-components/note.html
+    content='If you are developing in Drake and are using the
+    `drake_py_unittest` macro, you can specify the argument `--trace=user`
+    to get the same behavior.'}
 
 This generally should help you trace where the code is dying. However, if you
 still need to dig in, you can build the bindings in debug mode, without symbol
@@ -440,10 +444,9 @@ stripping, so you can debug with ``gdb`` or ``lldb``:
 cmake -DCMAKE_BUILD_TYPE=Debug ../drake
 ```
 
-<div class="note warning">
-    If you have SNOPT enabled (either ``-DWITH_SNOPT=ON`` or
-    ``-DWITH_ROBOTLOCOMOTION_SNOPT=ON``), symbols will *still* be stripped.
-</div>
+{% include post-components/note.html
+  content='If you have SNOPT enabled (either ``-DWITH_SNOPT=ON`` or
+    ``-DWITH_ROBOTLOCOMOTION_SNOPT=ON``), symbols will *still* be stripped.'}
 
 ##### For Developers
 
